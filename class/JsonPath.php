@@ -167,11 +167,16 @@ class JsonPath {
                     $args .= "->$param";
                 }
 
-                if (is_array($this->_json->{$param1}->{$args})) {
-                    display($this->_json->{$param1}->{$args});
+                if (!empty($this->_json->{$param1}->{$args}) && is_array($this->_json->{$param1}->{$args})) {
                     return $this->_json->{$param1}->{$args};
                 }
             }
+
+            $param1 .= "->$args";
+            display($param1);
+            display($this->_json->glossary->GlossDiv->title);
+            display($this->_json->{$param1});
+            return $this->_json->{$param1};
         }
 
         if (is_array($this->_json->{$param1})) {
@@ -183,8 +188,6 @@ class JsonPath {
                     $values[] = $value->{$param2};
             }
 
-            display($values);
-
             return $values;
         }
 
@@ -193,15 +196,16 @@ class JsonPath {
 
     private function _getItemValueBySearch($matches) {
         $object = $this->_getItemBySearch($matches);
+        $lastMatchesItemKey = count($matches) - 1;
 
         if (is_object($object)) {
-            return $this->_getNestedProperty(implode('->', explode('/', $matches[count($matches) - 1][0])), $object);
+            return $this->_getNestedProperty(implode('->', explode('/', $matches[$lastMatchesItemKey][0])), $object);
         }
 
         if (is_array($object)) {
             $values = [];
             foreach ($object as $obj) {
-                array_push($values, $this->_getNestedProperty(implode('->', explode('/', $matches[count($matches) - 1][0])), $obj));
+                array_push($values, $this->_getNestedProperty(implode('->', explode('/', $matches[$lastMatchesItemKey][0])), $obj));
             }
             return $values;
         }
