@@ -19,3 +19,7 @@ Check out [example.php](https://github.com/sylvan0s/jsonPath/blob/master/example
 Feel free to open an issue with your JSON sample !
 
 Or you can fork the project, create a new branch and contribute :)
+
+
+
+All JSON examples comes from [json.org](https://www.json.org/example.html)
