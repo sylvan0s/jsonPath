@@ -172,11 +172,7 @@ class JsonPath {
                 }
             }
 
-            $param1 .= "->$args";
-            display($param1);
-            display($this->_json->glossary->GlossDiv->title);
-            display($this->_json->{$param1});
-            return $this->_json->{$param1};
+            return $this->_getNestedProperty($args, $this->_json->{$param1});
         }
 
         if (is_array($this->_json->{$param1})) {

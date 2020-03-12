@@ -23,4 +23,14 @@ display($output);
 // try display($output);
 // $output will be an object
 
-display($content->jsonPath('//glossary/GlossDiv/title'));
+//$output = $content->jsonPath('//glossary/GlossDiv/GlossList/GlossEntry');
+// try display($output);
+// $output will be an object
+
+//$output = $content->jsonPath('//glossary/GlossDiv/GlossList/GlossEntry/GlossDef/para');
+// try display($output);
+// $output will be a string
+
+//$output = $content->jsonPath('//glossary/GlossDiv/GlossList/GlossEntry/GlossDef/GlossSeeAlso');
+// try display($output);
+// $output will be an array
