@@ -1,6 +1,5 @@
 <?php
 
-
 require_once 'inc/functions.php';
 require_once 'class/JsonPath.php';
 

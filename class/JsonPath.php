@@ -132,7 +132,7 @@ class JsonPath {
         }
 
         if ($operator === '=') {
-            return $object[$search - 1];
+            return $object[$search];
         }
 
         return [];
@@ -146,7 +146,7 @@ class JsonPath {
         $values = [];
 
         foreach ($object as $value) {
-            if ($value->{$key} === $search)
+            if (!empty($value->{$key}) && $value->{$key} === $search)
                 $values[] = $value;
         }
 
