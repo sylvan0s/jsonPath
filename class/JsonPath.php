@@ -17,6 +17,7 @@ class JsonPath {
         return $this->_json;
     }
 
+    // TODO : Prettify errors
     private function _isValidJson($filePath) {
         if (!is_file($filePath)) {
             display("$filePath is not a file.", true);
@@ -34,6 +35,7 @@ class JsonPath {
     }
 
     private function _jsonPath($path) {
+        display($path);
 
         // Example : //Articles
         if (preg_match_all('/^\/\/([\w-:]*)$/', $path, $matches)) {
@@ -53,6 +55,15 @@ class JsonPath {
         // Example : //Articles[title="My first article"]/id && //Articles/authors[position()=2]/firstname && //Articles/authors[last()]/address/city
         if (preg_match_all('/^\/\/([\w-\/:]*)\[([\w-():]*)([<>=\s-]*){0,1}"{0,1}([\w\s.-:]*)"{0,1}\]\/([\w-\/:]*)$/', $path, $matches)) {
             return $this->_getItemValueBySearch($matches);
+        }
+
+        // TODO : TO IMPLEMENT
+        // Example : //data[id="10"]/itineraries[id="14"]/departure[id="12"]/iataCode/toto && //data[id="10"]/itineraries/segments[id="14"]/departure/iataCode
+        if (preg_match_all('/[\/]+([\w-\/:]*)[\[]*([\w-():]*)([<>=\s-]*){0,1}"{0,1}([\w\s.-:]*)"{0,1}[\]]*/', $path, $matches)) {
+            display('TO IMPLEMENT');
+//            display($matches);
+//            $test = $this->_getItemValueBySearch($matches);
+//            display($test); die;
         }
 
         return '';
@@ -101,28 +112,20 @@ class JsonPath {
             $i = 0;
 
             foreach ($object as $obj) {
-                if ($operator === '<') {
-                    if ($i < $search) {
-                        array_push($searchValues, $obj);
-                    }
+                if ($operator === '<' && $i < $search) {
+                    array_push($searchValues, $obj);
                 }
 
-                if ($operator === '<=') {
-                    if ($i <= $search) {
-                        array_push($searchValues, $obj);
-                    }
+                if ($operator === '<=' && $i <= $search) {
+                    array_push($searchValues, $obj);
                 }
 
-                if ($operator === '>') {
-                    if ($i > $search) {
-                        array_push($searchValues, $obj);
-                    }
+                if ($operator === '>' && $i > $search) {
+                    array_push($searchValues, $obj);
                 }
 
-                if ($operator === '>=') {
-                    if ($i >= $search) {
-                        array_push($searchValues, $obj);
-                    }
+                if ($operator === '>=' && $i >= $search) {
+                    array_push($searchValues, $obj);
                 }
 
                 $i++;
@@ -146,8 +149,9 @@ class JsonPath {
         $values = [];
 
         foreach ($object as $value) {
-            if (!empty($value->{$key}) && $value->{$key} === $search)
+            if (!empty($value->{$key}) && $value->{$key} == $search) {
                 $values[] = $value;
+            }
         }
 
         return (count($values) > 1) ? $values : $values[0];
@@ -192,7 +196,7 @@ class JsonPath {
 
     private function _getItemValueBySearch($matches) {
         $object = $this->_getItemBySearch($matches);
-        $lastMatchesItemKey = count($matches) - 1;
+        $lastMatchesItemKey = array_key_last($matches);
 
         if (is_object($object)) {
             return $this->_getNestedProperty(implode('->', explode('/', $matches[$lastMatchesItemKey][0])), $object);
