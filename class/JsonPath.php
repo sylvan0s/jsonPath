@@ -35,73 +35,45 @@ class JsonPath {
     }
 
     private function _jsonPath($path) {
-        display($path);
-
-        // Example : //Articles
-        if (preg_match_all('/^\/\/([\w-:]*)$/', $path, $matches)) {
-            return $this->_getFirstItem($matches);
-        }
-
-        // Example : //Articles[title="My first article"] && //Articles[id=150] && //Articles[enabled=true] && //Articles/authors[name="Musso"] && //Articles/authors[position()=2] && //Articles/authors[last()]
-        if (preg_match_all('/^\/\/([\w-\/:]*)\[([\w-():]*)([<>=\s-]*){0,1}"{0,1}([\w\s.-:]*)"{0,1}\]$/', $path, $matches)) {
-            return $this->_getItemBySearch($matches);
-        }
-
-        // Example : //Articles/authors && //Articles/authors/identity && //Articles/authors/identity/firstname && more (Objects && Arrays)
-        if (preg_match_all('/^\/\/([\w-:]*)\/(\/?[\w-\/:]*)\[?$/', $path, $matches)) {
-            return $this->_getItems($matches);
-        }
-
-        // Example : //Articles[title="My first article"]/id && //Articles/authors[position()=2]/firstname && //Articles/authors[last()]/address/city
-        if (preg_match_all('/^\/\/([\w-\/:]*)\[([\w-():]*)([<>=\s-]*){0,1}"{0,1}([\w\s.-:]*)"{0,1}\]\/([\w-\/:]*)$/', $path, $matches)) {
-            return $this->_getItemValueBySearch($matches);
-        }
-
-        // TODO : TO IMPLEMENT
-        // Example : //data[id="10"]/itineraries[id="14"]/departure[id="12"]/iataCode/toto && //data[id="10"]/itineraries/segments[id="14"]/departure/iataCode
-        if (preg_match_all('/[\/]+([\w-\/:]*)[\[]*([\w-():]*)([<>=\s-]*){0,1}"{0,1}([\w\s.-:]*)"{0,1}[\]]*/', $path, $matches)) {
-            display('TO IMPLEMENT');
-//            display($matches);
-//            $test = $this->_getItemValueBySearch($matches);
-//            display($test); die;
+        if (preg_match_all('/\/{0,2}([\w\p{L}-\/:]+)(\[?([\w\p{L}-():]*)\s*([<>=-]*)?\s*"?([\w\s\p{L}.-:]*)"?\])?/', $path, $matches, PREG_SET_ORDER)) {
+            return $this->_handleMatchResult($matches);
         }
 
         return '';
     }
 
-    private function _getFirstItem($matches) {
-        $param = $matches[1][0];
-        return $this->_json->{$param};
-    }
+    private function _handleMatchResult($matches) {
+        $resultObject = $this->_json;
 
-    private function _getItemBySearch($matches) {
-        $param1 = $this->_getNestedProperty(implode('->', explode('/', $matches[1][0])));
-        $key = $matches[2][0];
-        $operator = trim($matches[3][0]);
-        $search = $matches[4][0];
+        foreach ($matches as $match) {
+            $resultObject = $this->_getNestedProperty(implode('->', explode('/', $match[1])), $resultObject);
 
-        if (!empty($param1)) {
-            return $this->_handleSearchKey($key, $operator, $search, $param1);
+            if (!empty($match[2])) {
+                $key = $match[3];
+                $operator = $match[4];
+                $search = $match[5];
+
+                $resultObject = $this->_handleSearchKey($key, $operator, $search, $resultObject);
+            }
         }
 
-        return [];
+        return $resultObject;
     }
 
     private function _handleSearchKey($key, $operator, $search, $object) {
         switch ($key) {
             case 'position()':
                 return $this->_handlePositionSearch($operator, $search, $object);
-                break;
             case 'last()':
                 return $this->_handleLastSearch($object);
-                break;
+            case 'first()':
+                return $this->_handleFirstSearch($object);
             default:
                 if (is_numeric($key)) { // TO HANDLE //Articles/authors[2] (= //Articles/authors[position()=2])
                     return $this->_handlePositionSearch('=', $key, $object);
                 } else {
                     return $this->_handleDefaultSearch($key, $search, $object);
                 }
-                break;
         }
     }
 
@@ -145,6 +117,10 @@ class JsonPath {
         return $object[count($object) - 1];
     }
 
+    private function _handleFirstSearch($object) {
+        return $object[0];
+    }
+
     private function _handleDefaultSearch($key, $search, $object) {
         $values = [];
 
@@ -155,62 +131,6 @@ class JsonPath {
         }
 
         return (count($values) > 1) ? $values : $values[0];
-    }
-
-    private function _getItems($matches) {
-        $param1 = $matches[1][0];
-        $param2 = explode('/', $matches[2][0]);
-
-        if (is_object($this->_json->{$param1})) {
-            $args = '';
-
-            foreach ($param2 as $param) {
-                if (empty($args)) {
-                    $args = "$param";
-                } else {
-                    $args .= "->$param";
-                }
-
-                if (!empty($this->_json->{$param1}->{$args}) && is_array($this->_json->{$param1}->{$args})) {
-                    return $this->_json->{$param1}->{$args};
-                }
-            }
-
-            return $this->_getNestedProperty($args, $this->_json->{$param1});
-        }
-
-        if (is_array($this->_json->{$param1})) {
-            $param2 = implode('->', $param2);
-            $values = [];
-
-            foreach ($this->_json->{$param1} as $value) {
-                if (!empty($value->{$param2}))
-                    $values[] = $value->{$param2};
-            }
-
-            return $values;
-        }
-
-        return [];
-    }
-
-    private function _getItemValueBySearch($matches) {
-        $object = $this->_getItemBySearch($matches);
-        $lastMatchesItemKey = array_key_last($matches);
-
-        if (is_object($object)) {
-            return $this->_getNestedProperty(implode('->', explode('/', $matches[$lastMatchesItemKey][0])), $object);
-        }
-
-        if (is_array($object)) {
-            $values = [];
-            foreach ($object as $obj) {
-                array_push($values, $this->_getNestedProperty(implode('->', explode('/', $matches[$lastMatchesItemKey][0])), $obj));
-            }
-            return $values;
-        }
-
-        return [];
     }
 
     private function _getNestedProperty($param, $obj = null) {
